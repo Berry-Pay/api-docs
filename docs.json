@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Berry Pay API",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#5652FF",
+    "light": "#7652FA",
+    "dark": "#12337A"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -34,8 +34,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/logo.png",
+    "dark": "/logo/logo.png"
   },
   "navbar": {
     "links": [
