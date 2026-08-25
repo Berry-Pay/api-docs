@@ -1,0 +1,57 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Berry Pay API",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "pages": [
+      {
+        "group": "Primeiros passos",
+        "pages": [
+          "index",
+          "quickstart",
+          "authentication",
+          "rate-limits-and-idempotency",
+          "errors"
+        ]
+      },
+      {
+        "group": "Referência da API",
+        "pages": [
+          "api-reference/endpoint/list-products",
+          "api-reference/endpoint/list-product-offers",
+          "api-reference/endpoint/list-coupons",
+          "api-reference/endpoint/create-coupon",
+          "api-reference/endpoint/list-transactions",
+          "api-reference/endpoint/reports-summary"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Suporte",
+        "href": "mailto:suporte@berrypay.com.br"
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "mcp"
+    ]
+  }
+}

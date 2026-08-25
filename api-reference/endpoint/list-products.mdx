@@ -1,0 +1,59 @@
+---
+title: "Listar produtos"
+api: "GET /v1/products"
+description: "Lista todos os produtos da sua conta."
+---
+
+Retorna todos os produtos da sua conta, exceto os excluídos. Sem paginação ou
+filtros — a maioria dos lojistas tem um número pequeno de produtos.
+
+Requer o escopo `read`.
+
+<ResponseField name="data" type="array">
+  <Expandable title="produto">
+    <ResponseField name="id" type="string">UUID do produto.</ResponseField>
+    <ResponseField name="name" type="string" />
+    <ResponseField name="description" type="string | null" />
+    <ResponseField name="status" type="string">Ex.: `ACTIVE`.</ResponseField>
+    <ResponseField name="image_url" type="string | null" />
+    <ResponseField name="checkout_slug" type="string | null" />
+    <ResponseField name="default_offer" type="string | null">ID da oferta padrão em `product_offers`.</ResponseField>
+    <ResponseField name="is_subscription" type="boolean" />
+    <ResponseField name="delivery_type" type="string | null" />
+    <ResponseField name="created_at" type="string">Timestamp ISO 8601 (UTC).</ResponseField>
+    <ResponseField name="updated_at" type="string">Timestamp ISO 8601 (UTC).</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://api.berrypay.com.br/v1/products \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "data": [
+    {
+      "id": "b1f2c3d4-0000-4000-8000-000000000001",
+      "name": "Curso de Marketing Digital",
+      "description": "Curso completo com 40 aulas",
+      "status": "ACTIVE",
+      "image_url": "https://cdn.checkout.berrypay.com.br/products/abc.jpg",
+      "checkout_slug": "curso-marketing-digital",
+      "default_offer": "of_9f8e7d6c",
+      "is_subscription": false,
+      "delivery_type": "MEMBER_AREA_BERRY",
+      "created_at": "2026-01-10T14:32:00.000Z",
+      "updated_at": "2026-06-02T09:11:00.000Z"
+    }
+  ]
+}
+```
+
+</ResponseExample>

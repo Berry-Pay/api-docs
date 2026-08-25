@@ -1,0 +1,66 @@
+---
+title: "Resumo de relatórios"
+api: "GET /v1/reports/summary"
+description: "Totais agregados de vendas: hoje, ontem, este mês e mês passado."
+---
+
+Requer o escopo `read`. Retorna totais de **todos** os seus produtos — não há
+detalhamento por produto aqui (isso fica no painel interno, fora do escopo da
+v1).
+
+<Warning>
+  Os períodos são calculados em **UTC**, não no horário de Brasília. Às 21h em
+  Brasília já é meia-noite em UTC (Brasília = UTC−3), então "hoje" nesta
+  resposta vira o novo dia 3 horas antes do que um lojista esperaria pelo
+  relógio dele. Se for exibir esses números para o lojista, converta para o
+  fuso horário dele antes de mostrar.
+</Warning>
+
+<ParamField query="status" type="string" default="paid">
+  Qual status de transação agregar. A maioria dos lojistas quer o padrão
+  (`paid`); envie, por exemplo, `refunded` para ver os totais de reembolso
+  nos mesmos períodos.
+</ParamField>
+
+<ResponseField name="status_filter" type="string">Repete o `status` usado.</ResponseField>
+<ResponseField name="timezone" type="string">Sempre `"UTC"`.</ResponseField>
+<ResponseField name="periods" type="object">
+  <Expandable title="periods">
+    <ResponseField name="today" type="object">Dia corrente em UTC.</ResponseField>
+    <ResponseField name="yesterday" type="object">Dia anterior em UTC.</ResponseField>
+    <ResponseField name="this_month" type="object">Mês corrente em UTC.</ResponseField>
+    <ResponseField name="last_month" type="object">Mês anterior em UTC.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+Cada objeto de período:
+
+<ResponseField name="gross_amount" type="integer">Centavos, soma de `subtotal_amount` das transações correspondentes.</ResponseField>
+<ResponseField name="net_amount" type="integer">Centavos, soma do que realmente caiu no seu saldo (sua parte como participante) das transações correspondentes.</ResponseField>
+<ResponseField name="transaction_count" type="integer" />
+
+<RequestExample>
+
+```bash cURL
+curl https://api.berrypay.com.br/v1/reports/summary \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "status_filter": "paid",
+  "timezone": "UTC",
+  "periods": {
+    "today": { "gross_amount": 39400, "net_amount": 37430, "transaction_count": 2 },
+    "yesterday": { "gross_amount": 118200, "net_amount": 112290, "transaction_count": 6 },
+    "this_month": { "gross_amount": 2461500, "net_amount": 2338425, "transaction_count": 125 },
+    "last_month": { "gross_amount": 3102300, "net_amount": 2947185, "transaction_count": 158 }
+  }
+}
+```
+
+</ResponseExample>

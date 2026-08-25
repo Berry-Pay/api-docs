@@ -1,0 +1,163 @@
+---
+title: "Listar transações"
+api: "GET /v1/transactions"
+description: "Lista e filtra transações, com os mesmos filtros da página de Transações do painel."
+---
+
+Requer o escopo `read`. Retorna apenas transações em que sua conta é
+participante (produtor, coprodutor ou afiliado).
+
+Alguns campos são intencionalmente excluídos de toda transação — veja
+[O que é excluído](#o-que-e-excluido) abaixo.
+
+## Parâmetros de busca (query)
+
+<ParamField query="page" type="integer" default="1">Número da página, começando em 1.</ParamField>
+<ParamField query="limit" type="integer" default="50">Máximo de 100.</ParamField>
+<ParamField query="id" type="string">UUID exato da transação.</ParamField>
+<ParamField query="status" type="string">Separado por vírgula, ex.: `paid,refunded`.</ParamField>
+<ParamField query="productId" type="string">UUIDs de produtos separados por vírgula — retorna transações que contenham qualquer um deles.</ParamField>
+<ParamField query="buyerEmail" type="string">Busca parcial, sem diferenciar maiúsculas/minúsculas, no e-mail do cliente.</ParamField>
+<ParamField query="search" type="string">Busca no e-mail do cliente (parcial) OU no ID exato da transação.</ParamField>
+<ParamField query="startDate" type="string">Data ISO, inclusiva, início do dia.</ParamField>
+<ParamField query="endDate" type="string">Data ISO, inclusiva, fim do dia (23:59:59.999).</ParamField>
+
+## Resposta
+
+<ResponseField name="data" type="array">
+  <Expandable title="transação">
+    <ResponseField name="id" type="string" />
+    <ResponseField name="status" type="string">`pending`, `paid`, `refunded`, `chargeback`, etc.</ResponseField>
+    <ResponseField name="payment_method" type="string | null">`pix`, `billet` (boleto) ou `credit_card`.</ResponseField>
+    <ResponseField name="installments" type="integer" />
+    <ResponseField name="currency" type="string">Ex.: `BRL`.</ResponseField>
+    <ResponseField name="customer" type="object">
+      <Expandable title="customer">
+        <ResponseField name="name" type="string" />
+        <ResponseField name="email" type="string" />
+        <ResponseField name="phone" type="string | null" />
+        <ResponseField name="document" type="string | null" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="amounts" type="object">
+      <Expandable title="amounts">
+        <ResponseField name="subtotal" type="integer">Centavos, antes do desconto.</ResponseField>
+        <ResponseField name="discount" type="integer">Centavos.</ResponseField>
+        <ResponseField name="refund" type="integer">Centavos reembolsados, se houver.</ResponseField>
+        <ResponseField name="gross_total" type="integer">Centavos, valor total da transação.</ResponseField>
+        <ResponseField name="net_amount" type="integer | null">
+          Centavos que caem no **seu** saldo por essa transação, após a taxa da
+          plataforma e eventuais divisões com coprodutores/afiliados. Só fica
+          `null` se sua conta não for participante — o que não deveria
+          acontecer, já que a busca já filtra pelas suas transações.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="card" type="object | null">
+      Presente apenas quando `payment_method` é `credit_card`.
+      <Expandable title="card">
+        <ResponseField name="brand" type="string | null" />
+        <ResponseField name="last_four_digits" type="string | null" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="coupon_code" type="string | null" />
+    <ResponseField name="refusal_reason" type="string | null">Motivo da recusa do pagamento, quando aplicável.</ResponseField>
+    <ResponseField name="pix_code" type="string | null" />
+    <ResponseField name="billet_code" type="string | null" />
+    <ResponseField name="billet_url" type="string | null" />
+    <ResponseField name="items" type="array">
+      <Expandable title="item">
+        <ResponseField name="product_id" type="string" />
+        <ResponseField name="product_name" type="string" />
+        <ResponseField name="quantity" type="integer" />
+        <ResponseField name="amount" type="integer">Centavos.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="participants" type="array | undefined">
+      Presente apenas quando a venda é dividida com coprodutores/afiliados
+      (ou seja, mais de um participante).
+      <Expandable title="participant">
+        <ResponseField name="name" type="string | null" />
+        <ResponseField name="role" type="string">`producer`, `co_producer`, `affiliate`, etc.</ResponseField>
+        <ResponseField name="percentage" type="string">String decimal, ex.: `"30.00"`.</ResponseField>
+        <ResponseField name="amount_cents" type="integer" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601, UTC.</ResponseField>
+    <ResponseField name="paid_at" type="string | null">ISO 8601, UTC.</ResponseField>
+    <ResponseField name="refunded_at" type="string | null">ISO 8601, UTC.</ResponseField>
+    <ResponseField name="expires_at" type="string | null">ISO 8601, UTC.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  <Expandable title="pagination">
+    <ResponseField name="page" type="integer" />
+    <ResponseField name="limit" type="integer" />
+    <ResponseField name="total" type="integer" />
+    <ResponseField name="total_pages" type="integer" />
+  </Expandable>
+</ResponseField>
+
+## O que é excluído
+
+Estes campos existem no registro interno da transação, mas nunca são
+retornados por esta API: `berry_fee` e `berry_net_profit` (economia interna da
+própria Berry Pay — não é algo que o lojista precise ver), `internal_gateway_*`
+e as respostas brutas do gateway (podem conter dados internos do provedor),
+`ip_address` / `user_agent`, e os campos de endereço de cobrança (fora do
+escopo da v1 — nos avise se precisar deles).
+
+<RequestExample>
+
+```bash cURL
+curl "https://api.berrypay.com.br/v1/transactions?status=paid&startDate=2026-08-01&endDate=2026-08-25&limit=20" \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "data": [
+    {
+      "id": "a1b2c3d4-0000-4000-8000-000000000010",
+      "status": "paid",
+      "payment_method": "pix",
+      "installments": 1,
+      "currency": "BRL",
+      "customer": {
+        "name": "João Silva",
+        "email": "joao@example.com",
+        "phone": "11999998888",
+        "document": "12345678901"
+      },
+      "amounts": {
+        "subtotal": 19700,
+        "discount": 0,
+        "refund": 0,
+        "gross_total": 19700,
+        "net_amount": 18715
+      },
+      "card": null,
+      "coupon_code": null,
+      "refusal_reason": null,
+      "pix_code": null,
+      "billet_code": null,
+      "billet_url": null,
+      "items": [
+        { "product_id": "b1f2c3d4-0000-4000-8000-000000000001", "product_name": "Curso de Marketing Digital", "quantity": 1, "amount": 19700 }
+      ],
+      "created_at": "2026-08-20T13:00:00.000Z",
+      "paid_at": "2026-08-20T13:01:12.000Z",
+      "refunded_at": null,
+      "expires_at": null
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 1, "total_pages": 1 }
+}
+```
+
+</ResponseExample>

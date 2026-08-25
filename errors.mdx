@@ -1,0 +1,64 @@
+---
+title: "Erros"
+description: "Formato das respostas de erro e códigos de status."
+---
+
+Erros sempre são retornados como um objeto JSON:
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "Product not found"
+  }
+}
+```
+
+Erros de validação também incluem um campo `details` (gerado pelo
+[zod](https://zod.dev) via `.flatten()`):
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Invalid coupon data",
+    "details": {
+      "fieldErrors": {
+        "discount_amount": ["Expected number, received string"]
+      }
+    }
+  }
+}
+```
+
+## Códigos de status
+
+<ResponseField name="401 unauthorized" type="status">
+  Chave de API ausente, malformada, desconhecida, revogada ou expirada.
+</ResponseField>
+
+<ResponseField name="403 forbidden" type="status">
+  Chave válida, mas sem o escopo necessário para este endpoint.
+</ResponseField>
+
+<ResponseField name="404 not_found" type="status">
+  O recurso não existe, ou não pertence à sua conta (isso é intencional — nunca
+  confirmamos se um ID de outra conta existe ou não).
+</ResponseField>
+
+<ResponseField name="409 conflict" type="status">
+  Já existe um cupom com esse código para o produto, ou uma requisição
+  duplicada com o mesmo `Idempotency-Key` ainda está em andamento.
+</ResponseField>
+
+<ResponseField name="422 invalid_request" type="status">
+  O corpo da requisição não passou na validação.
+</ResponseField>
+
+<ResponseField name="429 rate_limited" type="status">
+  Muitas requisições — veja <a href="/rate-limits-and-idempotency">Limites de requisição</a>.
+</ResponseField>
+
+<ResponseField name="500 internal_error" type="status">
+  Algo deu errado do nosso lado. Pode tentar novamente com segurança.
+</ResponseField>

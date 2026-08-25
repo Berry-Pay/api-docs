@@ -1,0 +1,43 @@
+---
+title: "Início rápido"
+description: "Faça sua primeira chamada à API da Berry Pay em poucos minutos."
+---
+
+## Pré-requisitos
+
+- Uma chave de API (`bp_live_...`). Veja <a href="/authentication">Autenticação</a> para saber como obter uma.
+- Qualquer cliente HTTP (`curl`, Postman, seu próprio backend).
+
+## Primeiros passos
+
+<Steps>
+  <Step title="Guarde sua chave de API">
+    Sua chave é exibida apenas uma vez, no momento em que é gerada. Guarde-a
+    como variável de ambiente ou em um secrets manager — nunca direto no
+    código-fonte.
+  </Step>
+  <Step title="Liste seus produtos">
+    ```bash
+    curl https://api.berrypay.com.br/v1/products \
+      -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+    ```
+
+    Se a chave estiver correta, a resposta traz a lista de produtos da sua
+    conta.
+  </Step>
+  <Step title="Explore os outros recursos">
+    A partir daqui, veja a referência da API para listar transações com
+    filtros, consultar relatórios agregados e gerenciar cupons:
+
+    <CardGroup cols={2}>
+      <Card title="Transações" icon="receipt" href="/api-reference/endpoint/list-transactions" />
+      <Card title="Relatórios" icon="chart-line" href="/api-reference/endpoint/reports-summary" />
+      <Card title="Ofertas" icon="tag" href="/api-reference/endpoint/list-product-offers" />
+      <Card title="Cupons" icon="ticket" href="/api-reference/endpoint/list-coupons" />
+    </CardGroup>
+  </Step>
+</Steps>
+
+<Tip>
+  Precisa de ajuda? Fale com o suporte da Berry Pay.
+</Tip>

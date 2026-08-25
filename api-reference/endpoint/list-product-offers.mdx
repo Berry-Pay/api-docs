@@ -1,0 +1,81 @@
+---
+title: "Listar ofertas do produto"
+api: "GET /v1/products/{productId}/offers"
+description: "Lista as ofertas ativas de um produto (variações de preço/cobrança)."
+---
+
+Uma oferta é uma variação de preço e cobrança de um produto (por exemplo,
+"12x parcelado" vs. "à vista no PIX", ou um plano de assinatura específico).
+Exclui ofertas removidas.
+
+Requer o escopo `read`. Retorna `404` se `productId` não existir ou não
+pertencer à sua conta.
+
+<ParamField path="productId" type="string" required>
+  UUID do produto, obtido em `GET /v1/products`.
+</ParamField>
+
+<ResponseField name="data" type="array">
+  <Expandable title="oferta">
+    <ResponseField name="id" type="string" />
+    <ResponseField name="product_id" type="string" />
+    <ResponseField name="name" type="string | null" />
+    <ResponseField name="status" type="string" />
+    <ResponseField name="amount" type="integer">Preço em centavos.</ResponseField>
+    <ResponseField name="type" type="string">`ONE_TIME` ou um tipo de assinatura.</ResponseField>
+    <ResponseField name="interval" type="string | null">Intervalo de cobrança para assinaturas (ex.: `month`).</ResponseField>
+    <ResponseField name="interval_count" type="integer | null" />
+    <ResponseField name="max_cycles" type="integer | null">`0` significa ilimitado.</ResponseField>
+    <ResponseField name="max_installments" type="integer | null" />
+    <ResponseField name="min_installments" type="integer | null" />
+    <ResponseField name="absorb_installment_taxes" type="boolean" />
+    <ResponseField name="created_at" type="string" />
+    <ResponseField name="updated_at" type="string" />
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://api.berrypay.com.br/v1/products/b1f2c3d4-0000-4000-8000-000000000001/offers \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "data": [
+    {
+      "id": "of_9f8e7d6c",
+      "product_id": "b1f2c3d4-0000-4000-8000-000000000001",
+      "name": "À vista no PIX",
+      "status": "ACTIVE",
+      "amount": 19700,
+      "type": "ONE_TIME",
+      "interval": null,
+      "interval_count": null,
+      "max_cycles": 0,
+      "max_installments": 1,
+      "min_installments": 1,
+      "absorb_installment_taxes": false,
+      "created_at": "2026-01-10T14:32:00.000Z",
+      "updated_at": "2026-01-10T14:32:00.000Z"
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+<ResponseExample>
+
+```json 404
+{
+  "error": { "code": "not_found", "message": "Product not found" }
+}
+```
+
+</ResponseExample>

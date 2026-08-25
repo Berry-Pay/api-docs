@@ -1,0 +1,54 @@
+---
+title: "Autenticação"
+description: "Como autenticar requisições na API da Berry Pay."
+---
+
+Autentique toda requisição com uma chave de API via bearer token:
+
+```http
+Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+<RequestExample>
+
+```bash cURL
+curl https://api.berrypay.com.br/v1/products \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+</RequestExample>
+
+## Como obter uma chave
+
+As chaves de API ainda não são autoatendidas — peça ao suporte da Berry Pay
+para gerar uma para a sua conta. Cada chave é exibida **uma única vez**, no
+momento da criação; se você perdê-la, será preciso gerar uma nova (o servidor
+guarda apenas um hash dela, nunca a chave completa).
+
+## Escopos (scopes)
+
+Cada chave carrega um ou os dois escopos abaixo:
+
+<ResponseField name="read" type="scope">
+  Necessário para todo endpoint `GET`.
+</ResponseField>
+
+<ResponseField name="write" type="scope">
+  Necessário, além do `read`, para `POST /products/:productId/coupons`.
+</ResponseField>
+
+Uma requisição sem o escopo necessário recebe `403 forbidden`, não `401` — a
+chave é válida, só não tem permissão para essa ação.
+
+## Erros
+
+<ResponseField name="401 unauthorized" type="error">
+  Header `Authorization` ausente ou malformado, chave desconhecida, ou chave
+  revogada/expirada.
+</ResponseField>
+
+<ResponseField name="403 forbidden" type="error">
+  Chave válida, mas sem o escopo necessário.
+</ResponseField>
+
+Veja <a href="/errors">Erros</a> para o formato completo de erro.

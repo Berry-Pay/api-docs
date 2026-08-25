@@ -1,0 +1,53 @@
+---
+title: "Limites de requisição e idempotência"
+description: "Limites de requisição e como reenviar requisições de escrita com segurança."
+---
+
+## Limites de requisição (rate limits)
+
+Cada chave de API tem um limite (60 requisições por minuto por padrão; algumas
+chaves podem ter um limite maior). Os limites são aplicados por chave, em uma
+janela fixa de 60 segundos.
+
+Toda resposta inclui:
+
+<ResponseField name="X-RateLimit-Limit" type="header">
+  O limite da sua chave na janela atual.
+</ResponseField>
+
+<ResponseField name="X-RateLimit-Remaining" type="header">
+  Quantas requisições ainda restam na janela atual.
+</ResponseField>
+
+Ao ultrapassar o limite, você recebe um `429` com o header `Retry-After`
+(segundos até a janela ser reiniciada):
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests. Slow down and retry after the window resets."
+  }
+}
+```
+
+## Idempotência
+
+Em `POST /products/:productId/coupons`, envie um header `Idempotency-Key` para
+reenviar a requisição com segurança após um timeout ou erro de rede, sem criar
+um cupom duplicado:
+
+```http
+POST /v1/products/{productId}/coupons
+Idempotency-Key: uma-chave-unica-por-tentativa
+```
+
+<ParamField header="Idempotency-Key" type="string">
+  Qualquer string única para essa tentativa (um UUID funciona bem). Reutilizar
+  a mesma chave dentro de 24 horas retorna a resposta original em vez de criar
+  um novo cupom. Duas requisições concorrentes com a mesma chave: a segunda
+  recebe `409` até a primeira terminar.
+</ParamField>
+
+A idempotência é opcional — sem o header, a requisição sempre é executada
+normalmente.

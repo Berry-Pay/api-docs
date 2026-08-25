@@ -1,0 +1,36 @@
+---
+title: "Introdução"
+description: "O que é a API da Berry Pay, sua URL base e versionamento."
+---
+
+A API da Berry Pay permite acessar programaticamente os produtos, ofertas,
+cupons, transações e relatórios de vendas da sua conta Berry Pay.
+
+## URL base
+
+```
+https://api.berrypay.com.br/v1
+```
+
+## Versionamento
+
+Todos os endpoints usam o prefixo `/v1`. Mudanças que quebrem compatibilidade
+serão lançadas em um novo prefixo (`/v2`), em vez de alterar o `/v1` existente.
+
+## Autenticação
+
+Toda requisição exige uma chave de API. Veja <a href="/authentication">Autenticação</a>.
+
+## Recursos disponíveis
+
+| Recurso | O que você pode fazer |
+|---|---|
+| Produtos | Listar seus produtos |
+| Ofertas | Listar as ofertas de um produto |
+| Cupons | Listar e criar cupons de um produto |
+| Transações | Listar transações com os mesmos filtros da página de Transações do painel |
+| Relatórios | Obter totais agregados de vendas (hoje, ontem, este mês, mês passado) |
+
+<Card title="Início rápido" icon="rocket" href="/quickstart">
+  Faça sua primeira chamada à API em poucos minutos.
+</Card>
