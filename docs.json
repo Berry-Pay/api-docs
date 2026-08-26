@@ -28,6 +28,7 @@
           "api-reference/endpoint/list-coupons",
           "api-reference/endpoint/create-coupon",
           "api-reference/endpoint/list-transactions",
+          "api-reference/endpoint/create-payment",
           "api-reference/endpoint/reports-summary"
         ]
       }

@@ -37,6 +37,11 @@ Erros de validação também incluem um campo `details` (gerado pelo
   Chave de API ausente, malformada, desconhecida, revogada ou expirada.
 </ResponseField>
 
+<ResponseField name="402 payment_failed" type="status">
+  O processador recusou a criação do pagamento — veja
+  <a href="/api-reference/endpoint/create-payment">Criar pagamento</a>.
+</ResponseField>
+
 <ResponseField name="403 forbidden" type="status">
   Chave válida, mas sem o escopo necessário para este endpoint.
 </ResponseField>
@@ -61,4 +66,10 @@ Erros de validação também incluem um campo `details` (gerado pelo
 
 <ResponseField name="500 internal_error" type="status">
   Algo deu errado do nosso lado. Pode tentar novamente com segurança.
+</ResponseField>
+
+<ResponseField name="502 checkout_error" type="status">
+  Não foi possível concluir a requisição com o processador de pagamento em
+  <a href="/api-reference/endpoint/create-payment">Criar pagamento</a>. Pode
+  tentar novamente.
 </ResponseField>

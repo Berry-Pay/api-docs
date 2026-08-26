@@ -1,0 +1,186 @@
+---
+title: "Criar pagamento"
+api: "POST /v1/payment"
+description: "Cria uma transação avulsa via PIX ou boleto para um produto seu."
+---
+
+Requer o escopo `write` (além do `read`). Cria uma transação usando o mesmo
+processamento do checkout — apenas **PIX** ou **boleto**, sem cartão.
+
+O produto é identificado por `product_id`; o checkout correspondente é
+resolvido a partir dele. Retorna `404` se `product_id` ou `offer` não
+existirem ou não pertencerem à sua conta.
+
+Suporta `Idempotency-Key` — veja
+<a href="/rate-limits-and-idempotency">Limites de requisição e idempotência</a>.
+A transação criada aparece em
+<a href="/api-reference/endpoint/list-transactions">Listar transações</a> como
+qualquer outra.
+
+## Parâmetros do corpo
+
+<ParamField body="product_id" type="string" required>
+  UUID do produto.
+</ParamField>
+
+<ParamField body="offer" type="string" required>
+  ID da oferta do produto.
+</ParamField>
+
+<ParamField body="payment_method" type="string" required>
+  `"pix"` ou `"billet"` (boleto).
+</ParamField>
+
+<ParamField body="coupon_code" type="string">
+  Código de cupom a aplicar. Omita ou envie `null` para nenhum.
+</ParamField>
+
+<ParamField body="buyer" type="object" required>
+  <Expandable title="buyer">
+    <ParamField body="name" type="string" required />
+    <ParamField body="email" type="string" required />
+    <ParamField body="document" type="string" required>
+      CPF (11 dígitos) ou CNPJ (14). A pontuação é ignorada.
+    </ParamField>
+    <ParamField body="phone" type="string">
+      Telefone em qualquer formato — ex.: `"+55 (11) 99999-8888"` ou
+      `"11999998888"`. É normalizado e dividido em código do país, DDD e número
+      antes de ser enviado ao processador.
+    </ParamField>
+    <ParamField body="address" type="object">
+      Opcional. Se enviado, todos os campos abaixo são obrigatórios, exceto
+      `complement` e `country`.
+      <Expandable title="address">
+        <ParamField body="street" type="string" required />
+        <ParamField body="number" type="string" required />
+        <ParamField body="complement" type="string" />
+        <ParamField body="city" type="string" required />
+        <ParamField body="state" type="string" required>UF com 2 letras, ex.: `"SP"`.</ParamField>
+        <ParamField body="country" type="string">2 letras. Padrão `"BR"`.</ParamField>
+        <ParamField body="zip_code" type="string" required>CEP. A pontuação é ignorada.</ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Resposta
+
+<ResponseField name="data" type="object">
+  <Expandable title="data">
+    <ResponseField name="transaction_id" type="string">UUID da transação criada.</ResponseField>
+    <ResponseField name="status" type="string">Sempre `pending` quando a criação dá certo.</ResponseField>
+    <ResponseField name="payment_method" type="string">`pix` ou `billet`.</ResponseField>
+    <ResponseField name="payment_url" type="string">
+      Página de pagamento para o cliente, no formato
+      `https://checkout.berrypay.com.br/transaction/{transaction_id}`.
+    </ResponseField>
+    <ResponseField name="expires_at" type="string | null">
+      ISO 8601. Vencimento do PIX ou do boleto, quando informado pelo gateway.
+    </ResponseField>
+    <ResponseField name="pix" type="object | null">
+      Presente apenas quando `payment_method` é `pix`.
+      <Expandable title="pix">
+        <ResponseField name="qr_code" type="string | null">Código copia e cola (payload EMV).</ResponseField>
+        <ResponseField name="qr_code_url" type="string | null">URL da imagem do QR Code.</ResponseField>
+        <ResponseField name="qr_code_base64" type="string | null">
+          Imagem do QR Code como data URI (`data:image/png;base64,...`). Pode vir
+          `null` se a imagem não pôde ser gerada — nesse caso, use `qr_code` ou
+          `qr_code_url`.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="billet" type="object | null">
+      Presente apenas quando `payment_method` é `billet`.
+      <Expandable title="billet">
+        <ResponseField name="barcode" type="string | null">Linha digitável do boleto.</ResponseField>
+        <ResponseField name="url" type="string | null">PDF do boleto.</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Erros específicos
+
+<ResponseField name="402 payment_failed" type="status">
+  O processador recusou a criação do pagamento.
+</ResponseField>
+
+<ResponseField name="502 checkout_error" type="status">
+  Não foi possível concluir a requisição com o processador de pagamento. Pode
+  tentar novamente.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.berrypay.com.br/v1/payment \
+  -H "Authorization: Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 7c1b8e2a-1c2d-4e3f-9a0b-1234567890ab" \
+  -d '{
+    "product_id": "b1f2c3d4-0000-4000-8000-000000000001",
+    "offer": "offer_abc123",
+    "payment_method": "pix",
+    "buyer": {
+      "name": "João Silva",
+      "email": "joao@example.com",
+      "document": "123.456.789-01",
+      "phone": "+55 (11) 99999-8888"
+    }
+  }'
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 201 (PIX)
+{
+  "data": {
+    "transaction_id": "a1b2c3d4-0000-4000-8000-000000000010",
+    "status": "pending",
+    "payment_method": "pix",
+    "payment_url": "https://checkout.berrypay.com.br/transaction/a1b2c3d4-0000-4000-8000-000000000010",
+    "expires_at": "2026-08-27T12:00:00.000Z",
+    "pix": {
+      "qr_code": "00020101021226880014br.gov.bcb.pix...",
+      "qr_code_url": "https://api.pagar.me/core/v5/transactions/tran_xxx/qrcode",
+      "qr_code_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg..."
+    },
+    "billet": null
+  }
+}
+```
+
+</ResponseExample>
+
+<ResponseExample>
+
+```json 201 (boleto)
+{
+  "data": {
+    "transaction_id": "a1b2c3d4-0000-4000-8000-000000000011",
+    "status": "pending",
+    "payment_method": "billet",
+    "payment_url": "https://checkout.berrypay.com.br/transaction/a1b2c3d4-0000-4000-8000-000000000011",
+    "expires_at": "2026-08-30T02:59:59.000Z",
+    "pix": null,
+    "billet": {
+      "barcode": "34191.79001 01043.510047 91020.150008 4 98770000019700",
+      "url": "https://api.pagar.me/core/v5/transactions/tran_yyy/pdf"
+    }
+  }
+}
+```
+
+</ResponseExample>
+
+<ResponseExample>
+
+```json 402
+{
+  "error": { "code": "payment_failed", "message": "The payment could not be created" }
+}
+```
+
+</ResponseExample>
