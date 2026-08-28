@@ -1,39 +1,85 @@
 ---
 title: "Servidor MCP"
-description: "Conecte um cliente de IA (MCP) à sua conta Berry Pay."
+description: "Conecte um assistente de IA à sua conta Berry Pay e consulte vendas, transações e faturamento em linguagem natural."
 ---
 
-A Berry Pay expõe um servidor [MCP](https://modelcontextprotocol.io) no mesmo
-domínio da API, em **`https://api.berrypay.com.br/mcp`**. Com ele, um cliente de
-IA compatível com MCP (Claude Desktop, editores com suporte a MCP, agentes
-próprios) pode consultar produtos, transações e faturamento — e, se você
-habilitar, criar cupons e cobranças.
+A Berry Pay expõe um servidor [MCP](https://modelcontextprotocol.io) (Model
+Context Protocol) que deixa você conectar um assistente de IA à sua conta.
+Depois de conectado, você pergunta em linguagem natural — _"quanto vendi esse
+mês?"_, _"liste as transações pendentes de hoje"_, _"crie um cupom de 10% para
+o curso de fotografia"_ — e o cliente de IA traduz isso em chamadas às
+ferramentas do servidor.
 
-## Conexão
+O servidor fica no mesmo domínio da API, em
+**`https://api.berrypay.com.br/mcp`**, e usa o transporte **Streamable HTTP**.
 
-O transporte é **Streamable HTTP**. Autentique com a mesma chave de API da REST,
-como bearer token:
+## O que dá para fazer
 
-```json
-{
-  "mcpServers": {
-    "berry-pay": {
-      "type": "http",
-      "url": "https://api.berrypay.com.br/mcp",
-      "headers": {
-        "Authorization": "Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+| Você pode | Ferramentas |
+|---|---|
+| Consultar produtos e suas ofertas | `list_products`, `list_product_offers` |
+| Consultar cupons de um produto | `list_coupons` |
+| Buscar transações com os mesmos filtros do painel | `list_transactions` |
+| Ver totais de vendas (hoje, ontem, este mês, mês passado) | `get_reports_summary` |
+| Criar cupons de desconto _(opcional, veja abaixo)_ | `create_coupon` |
+| Criar cobranças PIX ou boleto _(opcional, veja abaixo)_ | `create_payment` |
+
+## Antes de começar
+
+- Uma **chave de API dedicada** (`bp_live_...`) só para essa integração — veja
+  <a href="/authentication">Autenticação</a>. Uma chave separada pode ser
+  revogada sem afetar suas outras integrações.
+- Um cliente compatível com MCP: Claude Desktop, editores de código com suporte
+  a MCP, ou um agente próprio.
+
+<Warning>
+  Não há fluxo OAuth: qualquer pessoa ou aplicativo com a chave tem acesso total
+  à conta dela. Trate a chave como uma senha e use uma chave dedicada e
+  revogável.
+</Warning>
+
+## Como conectar
+
+<Steps>
+  <Step title="Crie uma chave de API dedicada">
+    Peça ao suporte da Berry Pay uma chave nova para essa integração. O escopo
+    `read` já cobre todas as ferramentas de consulta. Só adicione o escopo
+    `write` se você for usar `create_coupon` ou `create_payment`.
+  </Step>
+  <Step title="Adicione o servidor ao seu cliente de IA">
+    A maioria dos clientes usa um arquivo de configuração no formato abaixo — no
+    Claude Desktop, por exemplo, é o `claude_desktop_config.json`. Autentique
+    com a mesma chave de API da REST, como bearer token:
+
+    ```json
+    {
+      "mcpServers": {
+        "berry-pay": {
+          "type": "http",
+          "url": "https://api.berrypay.com.br/mcp",
+          "headers": {
+            "Authorization": "Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        }
       }
     }
-  }
-}
-```
+    ```
+  </Step>
+  <Step title="Reinicie o cliente e teste">
+    Reinicie o cliente para ele carregar o servidor. Depois, peça algo como:
 
-Não há fluxo OAuth — quem tem a chave tem acesso à conta dela. Trate a chave
-como uma senha e use uma chave dedicada (revogável) para essa integração.
+    > Quanto vendi esse mês na Berry Pay?
 
-## Ferramentas
+    O cliente deve chamar a ferramenta `get_reports_summary` e responder com os
+    totais de hoje, ontem, este mês e mês passado.
+  </Step>
+</Steps>
 
-Sempre disponíveis (exigem apenas o escopo `read`):
+## Ferramentas disponíveis
+
+### Sempre disponíveis
+
+Exigem apenas o escopo `read`:
 
 <ResponseField name="list_products" type="tool">
   Lista os produtos da conta.
@@ -52,22 +98,32 @@ Sempre disponíveis (exigem apenas o escopo `read`):
   Totais de hoje / ontem / este mês / mês passado (períodos em UTC).
 </ResponseField>
 
-Disponíveis apenas quando a Berry Pay habilita escrita no MCP **e** a chave tem
-o escopo `write`:
+### Ferramentas de escrita (opt-in)
+
+Ficam disponíveis apenas quando a Berry Pay habilita escrita no MCP para a sua
+conta **e** a chave tem o escopo `write`. Fale com o suporte para habilitar.
 
 <ResponseField name="create_coupon" type="tool">
   Cria um cupom de desconto para um produto.
 </ResponseField>
 <ResponseField name="create_payment" type="tool">
-  Cria uma transação PIX ou boleto pelo checkout. **Gera uma cobrança real.**
+  Cria uma transação PIX ou boleto pelo checkout.
+
+  <Warning>Gera uma cobrança real.</Warning>
 </ResponseField>
 
 As duas aceitam um `idempotency_key` opcional: repetir a chamada com a mesma
 chave devolve o resultado original em vez de duplicar a cobrança (janela de
 24h). Todos os valores monetários são inteiros em centavos.
 
-## Limites
+## Limites de requisição
 
 O `/mcp` tem seu próprio limite de requisições, separado do limite da REST e
 mais folgado, porque um agente costuma disparar várias chamadas por interação.
-Ao estourar, a resposta é `429` com `Retry-After`.
+Ao estourar, a resposta é `429` com o header `Retry-After` (segundos até
+liberar).
+
+<Tip>
+  Precisa de ajuda ou quer habilitar as ferramentas de escrita? Fale com o
+  suporte da Berry Pay.
+</Tip>
