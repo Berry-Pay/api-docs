@@ -1,0 +1,73 @@
+---
+title: "Servidor MCP"
+description: "Conecte um cliente de IA (MCP) à sua conta Berry Pay."
+---
+
+A Berry Pay expõe um servidor [MCP](https://modelcontextprotocol.io) no mesmo
+domínio da API, em **`https://api.berrypay.com.br/mcp`**. Com ele, um cliente de
+IA compatível com MCP (Claude Desktop, editores com suporte a MCP, agentes
+próprios) pode consultar produtos, transações e faturamento — e, se você
+habilitar, criar cupons e cobranças.
+
+## Conexão
+
+O transporte é **Streamable HTTP**. Autentique com a mesma chave de API da REST,
+como bearer token:
+
+```json
+{
+  "mcpServers": {
+    "berry-pay": {
+      "type": "http",
+      "url": "https://api.berrypay.com.br/mcp",
+      "headers": {
+        "Authorization": "Bearer bp_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+Não há fluxo OAuth — quem tem a chave tem acesso à conta dela. Trate a chave
+como uma senha e use uma chave dedicada (revogável) para essa integração.
+
+## Ferramentas
+
+Sempre disponíveis (exigem apenas o escopo `read`):
+
+<ResponseField name="list_products" type="tool">
+  Lista os produtos da conta.
+</ResponseField>
+<ResponseField name="list_product_offers" type="tool">
+  Ofertas de um produto. O `id` da oferta é o que `create_payment` espera.
+</ResponseField>
+<ResponseField name="list_coupons" type="tool">
+  Cupons configurados para um produto.
+</ResponseField>
+<ResponseField name="list_transactions" type="tool">
+  Busca nas transações da conta, com os mesmos filtros de
+  <a href="/api-reference/endpoint/list-transactions">`GET /v1/transactions`</a>.
+</ResponseField>
+<ResponseField name="get_reports_summary" type="tool">
+  Totais de hoje / ontem / este mês / mês passado (períodos em UTC).
+</ResponseField>
+
+Disponíveis apenas quando a Berry Pay habilita escrita no MCP **e** a chave tem
+o escopo `write`:
+
+<ResponseField name="create_coupon" type="tool">
+  Cria um cupom de desconto para um produto.
+</ResponseField>
+<ResponseField name="create_payment" type="tool">
+  Cria uma transação PIX ou boleto pelo checkout. **Gera uma cobrança real.**
+</ResponseField>
+
+As duas aceitam um `idempotency_key` opcional: repetir a chamada com a mesma
+chave devolve o resultado original em vez de duplicar a cobrança (janela de
+24h). Todos os valores monetários são inteiros em centavos.
+
+## Limites
+
+O `/mcp` tem seu próprio limite de requisições, separado do limite da REST e
+mais folgado, porque um agente costuma disparar várias chamadas por interação.
+Ao estourar, a resposta é `429` com `Retry-After`.
