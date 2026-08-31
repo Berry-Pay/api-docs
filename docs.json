@@ -18,6 +18,7 @@
           "authentication",
           "rate-limits-and-idempotency",
           "errors",
+          "webhooks",
           "mcp-server"
         ]
       },

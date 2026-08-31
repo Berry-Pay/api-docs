@@ -1,0 +1,204 @@
+---
+title: "Webhooks"
+description: "Receba notificações HTTP em tempo real quando uma transação muda de estado: pagamento aprovado, reembolso, PIX ou boleto gerado e chargeback."
+---
+
+Um webhook é uma URL sua que a Berry Pay chama sempre que algo acontece com uma
+transação. Em vez de ficar consultando a API de tempos em tempos, você cadastra
+um endpoint e recebe uma requisição `POST` com os dados da transação assim que o
+evento ocorre.
+
+## Como configurar
+
+No painel da Berry Pay, abra **Integrações → Webhooks** e, na aba
+**Configurações**, clique em **Novo webhook**. Preencha:
+
+- **URL do webhook** — endpoint público que vai receber as notificações. Use
+  **HTTPS**.
+- **Evento** — um evento específico (veja a lista abaixo) ou **Todos os
+  eventos**.
+- **Produto** — restringe o webhook a um produto. O padrão, **Todos os
+  produtos**, dispara para qualquer produto da conta.
+
+Você pode cadastrar quantos webhooks quiser — por exemplo, um endpoint por
+evento, ou um endpoint só para um produto. Cada webhook é disparado de forma
+independente.
+
+<Tip>
+  A Berry Pay não assina o corpo do webhook. Para garantir que a chamada veio da
+  Berry Pay, cadastre uma URL difícil de adivinhar — com um token secreto no
+  caminho ou na query string — e rejeite qualquer requisição que não bata com
+  ele.
+</Tip>
+
+## Eventos disponíveis
+
+| Evento | Quando é enviado |
+|---|---|
+| `purchase_approved` | O pagamento foi aprovado / confirmado. |
+| `purchase_refunded` | A compra foi reembolsada (total ou parcial). |
+| `pix_generated` | O cliente gerou um PIX que ainda não foi pago. |
+| `billet_printed` | O cliente gerou um boleto que ainda não foi pago. |
+| `chargeback` | A transação sofreu um chargeback. |
+
+Os eventos são derivados da mudança de status da transação no processador de
+pagamento. Mudanças de status que não correspondem a nenhum evento acima não
+geram webhook.
+
+## Formato da requisição
+
+Toda notificação é um `POST` com `Content-Type: application/json` e os headers:
+
+<ParamField header="User-Agent" type="string">
+  Sempre `BerryPay-Webhook/1.0`.
+</ParamField>
+<ParamField header="X-Webhook-Event" type="string">
+  O evento que disparou a notificação, ex.: `purchase_approved`. É o mesmo valor
+  do campo `event` no corpo.
+</ParamField>
+<ParamField header="X-Transaction-Id" type="string">
+  O UUID da transação. Não é enviado em reenvios manuais — nesse caso, use o
+  campo `transaction_id` do corpo.
+</ParamField>
+<ParamField header="X-Resent" type="string">
+  Presente e igual a `true` apenas quando a notificação foi reenviada
+  manualmente pelo painel. Em envios normais, o header não é enviado.
+</ParamField>
+
+## Corpo do payload
+
+```json
+{
+  "event": "purchase_approved",
+  "transaction_id": "7f8d3a5c-91e4-4b2f-a8c9-5d8b7e2f1c40",
+  "timestamp": "2026-08-31T18:34:34.889Z",
+  "data": {
+    "id": "7f8d3a5c-91e4-4b2f-a8c9-5d8b7e2f1c40",
+    "customer": {
+      "name": "Maria Oliveira",
+      "email": "maria.oliveira@example.com",
+      "phone": "+5511998877665",
+      "document": "12345678901"
+    },
+    "payment": {
+      "method": "pix",
+      "installments": 1,
+      "status": "paid"
+    },
+    "amounts": {
+      "subtotal": 19900,
+      "final": 19900,
+      "discount": 0,
+      "currency": "BRL"
+    },
+    "items": [
+      {
+        "product_id": "2a4f8f18-7d53-4c52-98cb-73f9b7d2e4c1",
+        "product_name": "Curso de Fotografia",
+        "quantity": 1,
+        "amount": 19900
+      }
+    ],
+    "pix_code": "00020101021226820014br.gov.bcb.pix...",
+    "billet_code": null,
+    "billet_url": null,
+    "created_at": "2026-08-31T18:28:15.213Z",
+    "paid_at": "2026-08-31T18:34:30.000Z",
+    "tracking": {
+      "utm_source": "google",
+      "utm_medium": "cpc",
+      "utm_campaign": "fotografia-2026",
+      "utm_content": "banner-topo",
+      "utm_term": "curso+de+fotografia"
+    }
+  }
+}
+```
+
+<ResponseField name="event" type="string">
+  Evento que disparou a notificação. Um dos valores de
+  [Eventos disponíveis](#eventos-disponiveis).
+</ResponseField>
+<ResponseField name="transaction_id" type="string">
+  UUID da transação. Igual a `data.id`.
+</ResponseField>
+<ResponseField name="timestamp" type="string">
+  Data e hora do envio, em ISO 8601 (UTC).
+</ResponseField>
+<ResponseField name="data" type="object">
+  <Expandable title="data">
+    <ResponseField name="id" type="string">UUID da transação.</ResponseField>
+    <ResponseField name="customer" type="object">
+      <Expandable title="customer">
+        <ResponseField name="name" type="string" />
+        <ResponseField name="email" type="string" />
+        <ResponseField name="phone" type="string | null" />
+        <ResponseField name="document" type="string | null" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="payment" type="object">
+      <Expandable title="payment">
+        <ResponseField name="method" type="string">`pix`, `billet` (boleto) ou `credit_card`.</ResponseField>
+        <ResponseField name="installments" type="integer">Número de parcelas.</ResponseField>
+        <ResponseField name="status" type="string">Status da transação, ex.: `pending`, `paid`, `refunded`, `chargeback`.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="amounts" type="object">
+      <Expandable title="amounts">
+        <ResponseField name="subtotal" type="integer">Centavos, antes do desconto.</ResponseField>
+        <ResponseField name="final" type="integer">Centavos, valor final cobrado.</ResponseField>
+        <ResponseField name="discount" type="integer">Centavos de desconto.</ResponseField>
+        <ResponseField name="currency" type="string">Ex.: `BRL`.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="items" type="array">
+      <Expandable title="item">
+        <ResponseField name="product_id" type="string" />
+        <ResponseField name="product_name" type="string" />
+        <ResponseField name="quantity" type="integer" />
+        <ResponseField name="amount" type="integer">Centavos.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="pix_code" type="string | null">Código copia-e-cola do PIX. Preenchido em `pix_generated`.</ResponseField>
+    <ResponseField name="billet_code" type="string | null">Linha digitável do boleto. Preenchido em `billet_printed`.</ResponseField>
+    <ResponseField name="billet_url" type="string | null">URL para visualizar o boleto.</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601, UTC.</ResponseField>
+    <ResponseField name="paid_at" type="string | null">ISO 8601, UTC. `null` enquanto a transação não é paga.</ResponseField>
+    <ResponseField name="tracking" type="object | null">
+      Parâmetros de atribuição capturados no checkout. `null` quando não há
+      atribuição.
+      <Expandable title="tracking">
+        <ResponseField name="utm_source" type="string | null" />
+        <ResponseField name="utm_medium" type="string | null" />
+        <ResponseField name="utm_campaign" type="string | null" />
+        <ResponseField name="utm_content" type="string | null" />
+        <ResponseField name="utm_term" type="string | null" />
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Como responder
+
+Responda com qualquer status **2xx** o mais rápido possível. Qualquer resposta
+fora da faixa 2xx é registrada como falha. Faça o processamento pesado de forma
+assíncrona (uma fila, por exemplo) e devolva a resposta na hora.
+
+- **Não há retry automático.** Se a entrega falhar, a Berry Pay não reenvia
+  sozinha — você reenvia manualmente pelo painel, na aba **Logs**.
+- **Trate duplicatas.** A mesma transação pode gerar vários eventos (ex.:
+  `pix_generated` e depois `purchase_approved`), e um reenvio manual repete uma
+  notificação já entregue. Use `transaction_id` + `event` para saber o que já
+  foi processado.
+- **Roteie pelo evento.** Use o header `X-Webhook-Event` (ou o campo `event`)
+  para tratar cada tipo de notificação.
+- **Responda 2xx até para eventos que você ignora** — caso contrário a entrega
+  fica marcada como falha.
+
+## Logs e reenvio
+
+Na aba **Logs** da tela de Webhooks você vê o histórico de entregas: evento,
+URL, status (**Sucesso**, **Falhou** ou **Pendente**), código HTTP da resposta e
+data/hora. Abra um log para ver o payload enviado e a resposta recebida
+(limitada aos primeiros 1000 caracteres). O botão de reenviar dispara a mesma
+notificação de novo, com o header `X-Resent: true`.
