@@ -94,6 +94,8 @@ Toda notificação é um `POST` com `Content-Type: application/json` e os header
     "items": [
       {
         "product_id": "2a4f8f18-7d53-4c52-98cb-73f9b7d2e4c1",
+        "offer_id": "9c1e3b7a-4d2f-4a8e-b5c6-1f0e2d3c4b5a",
+        "type": "main_product",
         "product_name": "Curso de Fotografia",
         "quantity": 1,
         "amount": 19900
@@ -154,6 +156,8 @@ Toda notificação é um `POST` com `Content-Type: application/json` e os header
     <ResponseField name="items" type="array">
       <Expandable title="item">
         <ResponseField name="product_id" type="string" />
+        <ResponseField name="offer_id" type="string">ID da oferta do item.</ResponseField>
+        <ResponseField name="type" type="string">`main_product` (produto principal) ou `order_bump`.</ResponseField>
         <ResponseField name="product_name" type="string" />
         <ResponseField name="quantity" type="integer" />
         <ResponseField name="amount" type="integer">Centavos.</ResponseField>
