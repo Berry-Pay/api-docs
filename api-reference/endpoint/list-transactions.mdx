@@ -83,6 +83,18 @@ Alguns campos são intencionalmente excluídos de toda transação — veja
         <ResponseField name="amount_cents" type="integer" />
       </Expandable>
     </ResponseField>
+    <ResponseField name="tracking" type="object">
+      Parâmetros de rastreamento capturados no checkout. Campos ausentes vêm como `null`.
+      <Expandable title="tracking">
+        <ResponseField name="utm_source" type="string | null" />
+        <ResponseField name="utm_medium" type="string | null" />
+        <ResponseField name="utm_campaign" type="string | null" />
+        <ResponseField name="utm_content" type="string | null" />
+        <ResponseField name="utm_term" type="string | null" />
+        <ResponseField name="src" type="string | null" />
+        <ResponseField name="sck" type="string | null" />
+      </Expandable>
+    </ResponseField>
     <ResponseField name="created_at" type="string">ISO 8601, UTC.</ResponseField>
     <ResponseField name="paid_at" type="string | null">ISO 8601, UTC.</ResponseField>
     <ResponseField name="refunded_at" type="string | null">ISO 8601, UTC.</ResponseField>
@@ -150,6 +162,15 @@ curl "https://api.berrypay.com.br/v1/transactions?status=paid&startDate=2026-08-
       "items": [
         { "product_id": "b1f2c3d4-0000-4000-8000-000000000001", "product_name": "Curso de Marketing Digital", "quantity": 1, "amount": 19700 }
       ],
+      "tracking": {
+        "utm_source": "facebook",
+        "utm_medium": "cpc",
+        "utm_campaign": "lancamento-agosto",
+        "utm_content": null,
+        "utm_term": null,
+        "src": null,
+        "sck": null
+      },
       "created_at": "2026-08-20T13:00:00.000Z",
       "paid_at": "2026-08-20T13:01:12.000Z",
       "refunded_at": null,
